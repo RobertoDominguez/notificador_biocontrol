@@ -1,0 +1,275 @@
+from core.db_sqlsrv import ConnSQLSRV
+from core.db_mysql import ConnMySQL
+from services.ConfigService import config_service
+from models.Marcacion import Marcacion
+import json
+from datetime import datetime, timedelta, date
+import threading
+import time
+
+class MarcacionService:
+    def __init__(self):
+        self.config = config_service
+        self.conndbbioapp = None
+        self.conndbgym = None
+        self.cachegym = []
+        self.firstEntry = True
+        self.intento = 0
+        self.connect()
+        
+        # Iniciar el hilo de actualización
+        hilo_cache = threading.Thread(target=self.worker)
+        hilo_cache.daemon = True  # Para que el hilo se cierre cuando el programa principal cierre
+        hilo_cache.start()
+
+        # Iniciar el hilo de actualizacion de los rele (Hacer en otro archivo py)
+
+    def connect(self):
+        if self.config.driver == 'SQLSRV':
+            self.conndbbioapp = ConnSQLSRV(
+                server=self.config.host,
+                port=self.config.port,
+                database=self.config.database,
+                username=self.config.user,
+                password=self.config.password
+            )
+
+        if self.config.driver == 'MYSQL':
+            self.conndbbioapp = ConnMySQL(
+                server=self.config.host,
+                port=self.config.port,
+                database=self.config.database,
+                username=self.config.user,
+                password=self.config.password
+            )
+
+        if self.config.driver2 == 'SQLSRV':
+            self.conndbgym = ConnSQLSRV(
+                server=self.config.host2,
+                port=self.config.port2,
+                database=self.config.database2,
+                username=self.config.user2,
+                password=self.config.password2
+            )
+
+        if self.config.driver2 == 'MYSQL':
+            self.conndbgym = ConnMySQL(
+                server=self.config.host2,
+                port=self.config.port2,
+                database=self.config.database2,
+                username=self.config.user2,
+                password=self.config.password2
+            )
+
+    def cachearGymDB(self):
+        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'MYSQL' and self.config.sistema == 1 :
+            resultGym = self.conndbgym.execute_query("SELECT Carnet,ClieNombre,Membresia,FechaIni,FechaFin,Paquete,SucNombre,Habilitado FROM acceso ", ( ))
+            if len(resultGym)>0:
+                self.cachegym = []
+            else:
+                print('Error en cache: 0 Tuplas recibidas')
+
+            for gym in resultGym:
+                row = {
+                    'Carnet' : gym[0],
+                    'ClieNombre' : gym[1],
+                    'Membresia' : gym[2],
+                    'FechaIni' : gym[3],
+                    'FechaFin' : gym[4],
+                    'Paquete' : gym[5],
+                    'SucNombre' : gym[6],
+                    'Habilitado' : gym[7],
+                }
+                self.cachegym.append(row)
+
+        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'SQLSRV' and self.config.sistema == 2:
+            resultGym = self.conndbgym.execute_query("SELECT c.codigo, CONCAT(c.nombres, c.apellidos) as nombre_completo , p.nombre as membresia," \
+            "v.fecha_desde, v.fecha_hasta, p.nombre as nombre_paquete,'' as suc_nombre, 1 as habilitado " \
+            "FROM Venta as v JOIN Paquete as p ON v.id_paquete = p.id JOIN Cliente as c ON c.id = v.id_cliente " \
+            "WHERE v.cancelado = 1 AND v.anulado = 0 ", ( ))
+
+            if len(resultGym) > 0:
+                self.cachegym = []
+            else:
+                print('Error en cache: 0 Tuplas recibidas')
+
+            for gym in resultGym:
+                row = {
+                    'Carnet' : gym[0],
+                    'ClieNombre' : gym[1],
+                    'Membresia' : gym[2],
+                    'FechaIni' : gym[3],
+                    'FechaFin' : gym[4],
+                    'Paquete' : gym[5],
+                    'SucNombre' : gym[6],
+                    'Habilitado' : gym[7],
+                }
+                self.cachegym.append(row)
+        
+        if self.config.driver == 'SQLSRV' and self.firstEntry:
+            self.firstEntry = False
+            self.vaciarColaDeEspera()
+    
+    def worker(self):
+        while True:
+            print('Cache DB2')
+            self.cachearGymDB()
+            time.sleep(self.config.cache_time)  # Esperar x segundos
+
+
+    def queryACache(self,carnet):
+        result = []
+        for gym in self.cachegym:
+            if gym['Carnet'] == carnet:
+                result.append(gym)
+        return result
+
+    def vaciarColaDeEspera(self):
+        if self.config.driver == 'SQLSRV' :
+            print('Vaciando cola de espera...')
+            resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set mostrado = 1 where mostrado = 0",())
+            resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set abierto = 1 where abierto = 0",())
+
+    def verificarMarcacion(self,terminal,relay=False):
+        marcacion = None
+
+        if self.config.config == 0:
+            return Exception('no configurado')
+        
+
+        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'MYSQL' and self.config.sistema == 1 :
+            if not relay:
+                resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
+                ' JOIN acc."User" as u ON a.UserCode=u.Code' \
+                " WHERE a.mostrado = 0 AND a.TerminalName = %s",(terminal,))
+            if relay:
+                resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
+                ' JOIN acc."User" as u ON a.UserCode=u.Code' \
+                " WHERE a.abierto = 0 AND a.TerminalName = %s",(terminal,))
+            
+
+            r = None
+            if len(resultBioApp) > 0:
+                r = resultBioApp[0]
+                print("Nueva Marcacion: "+r[1])
+            
+            g = None
+            habilitado = 0
+            if r != None:
+                resultGym = self.queryACache(r[1])
+
+                if len(resultGym) > 0:
+                    g = resultGym[0]
+                    for gym in resultGym:
+                        if gym['Habilitado'] == 1 or gym['Habilitado'] == '1' or gym['Habilitado'] == True:
+                            habilitado = 1
+
+                    
+
+            if r != None and g != None:
+                foto = 'Sin Foto'
+                jsonMetaImage = json.loads(r[7]).get("photoFileName")
+                if jsonMetaImage is not None:
+                    foto = str(jsonMetaImage) + '.' + self.config.extension_images
+
+                fecha_fin = g['FechaFin']
+                fecha_actual = date.today()
+
+                diferencia = fecha_fin - fecha_actual
+                dias_diferencia = diferencia.days + 1
+                if (dias_diferencia < 0):
+                    dias_diferencia = 0
+                cercaDeVencer = dias_diferencia <= self.config.dias_alerta
+
+                marcacion = Marcacion(r[1],r[2],r[3],r[4],r[5],r[6],g['ClieNombre'],habilitado,cercaDeVencer,foto,g['Paquete'],g['FechaIni'],
+                                      g['FechaFin'],self.config.seconds_notification,dias_diferencia)
+                
+                #pone en mostrada la marcacion
+                if not relay:
+                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set mostrado = 1 WHERE Id = %s",(r[0],))
+                if relay:
+                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set abierto = 1 WHERE Id = %s",(r[0],))   
+
+            if r != None and g == None:
+                self.intento = self.intento + 1
+
+            #Intenta 3 veces antes de poner en mostrada la marcacion (en caso de algun error que no se trabe)
+            if r != None and g == None and self.intento > 3:
+                #pone en mostrada la marcacion
+                if not relay:
+                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set mostrado = 1 WHERE Id = %s",(r[0],))
+                if relay:
+                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set abierto = 1 WHERE Id = %s",(r[0],))   
+
+                self.intento = 0  
+
+        # Falta completar y probar para la conexion 2, pero ya esta la query para cache
+        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'SQLSRV' and self.config.sistema == 2:
+            if not relay:
+                resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
+                ' JOIN acc."User" as u ON a.UserCode=u.Code' \
+                " WHERE a.mostrado = 0 AND a.TerminalName = %s",(terminal,))
+            if relay:
+                resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
+                ' JOIN acc."User" as u ON a.UserCode=u.Code' \
+                " WHERE a.abierto = 0 AND a.TerminalName = %s",(terminal,))
+            
+
+            r = None
+            if len(resultBioApp) > 0:
+                r = resultBioApp[0]
+                print("Nueva Marcacion: "+r[1])
+            
+            g = None
+            habilitado = 0
+            if r != None:
+                resultGym = self.queryACache(r[1])
+
+                if len(resultGym) > 0:
+                    g = resultGym[0]
+                    for gym in resultGym:
+                        if gym['Habilitado'] == 1 or gym['Habilitado'] == '1' or gym['Habilitado'] == True:
+                            habilitado = 1
+
+                    
+
+            if r != None and g != None:
+                foto = 'Sin Foto'
+                jsonMetaImage = json.loads(r[7]).get("photoFileName")
+                if jsonMetaImage is not None:
+                    foto = str(jsonMetaImage) + '.' + self.config.extension_images
+
+                fecha_fin = g['FechaFin']
+                fecha_actual = date.today()
+
+                diferencia = fecha_fin - fecha_actual
+                dias_diferencia = diferencia.days + 1
+                if (dias_diferencia < 0):
+                    dias_diferencia = 0
+                cercaDeVencer = dias_diferencia <= self.config.dias_alerta
+
+                marcacion = Marcacion(r[1],r[2],r[3],r[4],r[5],r[6],g['ClieNombre'],habilitado,cercaDeVencer,foto,g['Paquete'],g['FechaIni'],
+                                      g['FechaFin'],self.config.seconds_notification,dias_diferencia)
+                
+                #pone en mostrada la marcacion
+                if not relay:
+                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set mostrado = 1 WHERE Id = %s",(r[0],))
+                if relay:
+                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set abierto = 1 WHERE Id = %s",(r[0],))   
+
+            if r != None and g == None:
+                self.intento = self.intento + 1
+
+            #Intenta 3 veces antes de poner en mostrada la marcacion (en caso de algun error que no se trabe)
+            if r != None and g == None and self.intento > 3:
+                #pone en mostrada la marcacion
+                if not relay:
+                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set mostrado = 1 WHERE Id = %s",(r[0],))
+                if relay:
+                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set abierto = 1 WHERE Id = %s",(r[0],))   
+
+                self.intento = 0  
+        
+        return marcacion
+    
+marcacion_service = MarcacionService()

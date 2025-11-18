@@ -1,0 +1,58 @@
+use Bioapp
+
+select top 10 * from acc.AccessLog where TerminalName = 'AYACUCHO' AND id = 355842 or id = 7677 or id = 7678
+
+update acc.AccessLog set UserCode = '8578649' where id = 7678
+
+update acc.AccessLog set mostrado = 0 where id = 7677
+
+update acc.AccessLog set mostrado = 0 where id = 355842
+
+update acc.AccessLog set mostrado = 0 where id = 7709
+
+
+select * from acc.AccessLog where id = 7709
+
+
+update acc.AccessLog set TerminalName = 'JUNIN' where id=355841
+
+
+select * from bio.Terminal
+
+select t.Guid, t.Code, t.Name,t.GroupId FROM bio.Terminal as t,acc."Group" as g where t.GroupId=g.Id AND g.Name='Grupo Roes'
+
+SELECT top 1 UserCode,DateTime,TerminalCode,Allowed,TerminalName,TerminalIP FROM acc.AccessLog WHERE mostrado = 0 AND TerminalName = 'AYACUCHO'
+
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------
+
+
+ALTER TABLE acc.AccessLog add mostrado bit default 0;
+
+alter table acc.accesslog drop column mostrado
+
+select top 1000 * from acc.AccessLog
+
+select top 1000 * from acc."User"
+
+select top 1000 *
+from acc.AccessLog as a
+JOIN acc."User" as u
+ON a.UserCode=u.Code
+where a.id = 7709
+
+
+update acc.AccessLog set UserCode = '8578649' where id = 7709
+
+update acc."User" set Code = '8578649' where id = 1362
+
+
+update acc."User" set Meta = '{"role": "2","hasPassword":"false","hasFingerPrint":"false","hasBioPhoto":"true","photoFileName":"13d70fe5-52ae-4fd1-8fb2-2581c9984cf9"}' where id = 1362
+
+
+
+

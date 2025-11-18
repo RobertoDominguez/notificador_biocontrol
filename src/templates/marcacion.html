@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcación en Tiempo Real</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            /* padding: 20px; */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        h1{
+            font-size: 3rem;
+        }
+        .marcacion-container {
+            width: 100%;
+            height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .marcacion-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .status-allowed {
+            /* border-left: 10px solid #28a745; */
+            border: 10px solid #28a745;
+        }
+        .status-denied {
+            border: 10px solid #dc3545;
+        }
+        .status-warning {
+            border: 10px solid #ffc107;
+        }
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .foto-container {
+            width: 80%;
+            /* height: 250px; */
+            border-radius: 5%;
+            overflow: hidden;
+            margin: 0 auto;
+            border: 3px solid #667eea;
+        }
+        .foto-placeholder {
+            width: 100%;
+            height: 100%;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #6c757d;
+            text-align: center;
+        }
+        .datetime {
+            font-size: 2.0rem;
+            font-weight: bold;
+            /* color: #495057; */
+            color: #343a40;
+        }
+        .nombre {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #343a40;
+        }
+        .codigo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            /* color: #6c757d; */
+            color: #343a40;
+        }
+
+        .image-container {
+            width: 100vw;   /* 90% del ancho del viewport */
+            height: 100vh;  /* 90% del alto del viewport */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .centered-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;  /* Esto hace el efecto "fill center" */
+            object-position: center; /* Centra la imagen dentro del contenedor */
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="image-container" id="fondo-card">
+
+    </div>
+
+    <div class="marcacion-container" id="marcacion-card">
+        <div class="card marcacion-card">
+            <div class="card-header bg-transparent">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="mb-1" id="nombre-gym">Bienvenido a </h1>
+                        <h5 id="terminal-info" class="text-muted mb-0"></h5>
+                    </div>
+                
+                </div>
+            </div>
+
+            <div class="card-body card-content">
+                <div class="row align-items-center h-100">
+                    <div class="col-md-4 text-center">
+                        <div class="foto-container mb-4">
+                            <div class="foto-placeholder" id="foto-container">
+                                Sin Foto
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="text-center text-md-start">
+                            <div class="row mt-4">
+                                <div class="col-md-8 mb-3">
+                                    <div class="nombre mb-3" id="nombre-persona">
+                                        Esperando marcación...
+                                    </div>
+                                    <div class="codigo mb-4" id="fecha-ini-fin">
+                                        -
+                                    </div>
+                                    <div class="datetime mb-4" id="datetime">
+                                        -
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="foto-placeholder" id="foto-logo-container">
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="row mt-4">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-3">
+                                            <small class="text-muted">Terminal</small>
+                                            <div id="terminal-name" class="fw-bold fs-5">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-3">
+                                            <small class="text-muted">Estado</small>
+                                            <div id="estado" class="fw-bold fs-5">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-transparent">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <small class="text-muted">Paquete:</small>
+                        <div id="paquete-id" class="fw-bold fs-6">-</div>
+                    </div>
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <small class="text-muted">Código Persona:</small>
+                        <div id="persona-code" class="fw-bold fs-6">-</div>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Hora actual:</small>
+                        <div id="next-update" class="fw-bold fs-6">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let terminalCode = '';
+        let resetTimeout;
+        let updateInterval;
+        let lastMarcacionTime = 0;
+        let RESET_TIME = 10000; // 10 segundos
+
+        const marcacionCard = document.getElementById('marcacion-card');
+        let displayOriginal = marcacionCard.style.display || window.getComputedStyle(marcacionCard).display;
+        marcacionCard.style.display = 'none';
+
+        const fondoCard = document.getElementById('fondo-card');
+        let displayOriginalCard = fondoCard.style.display || window.getComputedStyle(fondoCard).display;
+
+        // Obtener el código de terminal de la URL
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            terminalCode = urlParams.get('terminal');
+
+            if (!terminalCode) {
+                alert('No se especificó una terminal');
+                volverATerminales();
+                return;
+            }
+
+            document.getElementById('terminal-info').textContent = `Terminal: ${terminalCode}`;
+
+            //Cargar configuraciones
+            cargarConfiguracion();
+            
+            // Cargar datos inmediatamente
+            cargarMarcacion();
+
+            // Configurar intervalo de actualización cada 1 segundo
+            updateInterval = setInterval(cargarMarcacion, 1000);
+            
+            // Iniciar contador de reset
+            iniciarContadorReset();
+        });
+
+        function cargarMarcacion() {
+            fetch(`/api/marcacion/${terminalCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        RESET_TIME = data.data.duracion_marcacion * 1000;
+                        actualizarInterfaz(data.data);
+                    } else {
+                        console.error('Error al cargar marcación');
+                        // Si hay error, mantener el estado actual
+                        iniciarContadorReset();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Si hay error, mantener el estado actual
+                    iniciarContadorReset();
+                });
+        }
+
+        function cargarConfiguracion() {
+            fetch(`/api/config`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        actualizarInterfazConfig(data.data);
+                    } else {
+                        console.error('Error al cargar config');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function formatearFecha(fecha) {
+            const formato = new Intl.DateTimeFormat('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            return formato.format(fecha);
+        }
+
+        function actualizarInterfazConfig(config){
+            document.getElementById('nombre-gym').textContent = 'Bienvenido a '+config.NOMBRE_GYM;
+            // Actualizar foto
+            const fotoContainer = document.getElementById('foto-logo-container');
+            if (config.LOGO_PATH) {
+                fotoContainer.innerHTML = `<img src="/api/logo" alt="Foto" style="width:100%;height:100%;object-fit:cover;">`;
+            } else {
+                fotoContainer.innerHTML = '';
+            }
+
+           // Actualizar fondo
+            const fondoContainer = document.getElementById('fondo-card');
+            if (config.FONDO_PATH) {
+                fondoContainer.innerHTML = `<img src="/api/fondo" alt="Fondo" class="centered-image">`;
+            } else {
+                fondoContainer.innerHTML = '';
+            }
+            
+        }
+
+        function actualizarInterfaz(marcacion) {
+            // Actualizar última actualización
+            const now = new Date();
+
+            // Actualizar próxima actualización
+            const nextUpdate = new Date(now.getTime() + 1000);
+            document.getElementById('next-update').textContent =
+                nextUpdate.toLocaleTimeString();
+
+            // Si no hay datos de marcación reciente
+            if (!marcacion || !marcacion.nombre) {
+                // No actualizamos la interfaz si no hay datos nuevos
+                return;
+            }
+
+            // Restaurar al estado original
+            marcacionCard.style.display = displayOriginal;
+            fondoCard.style.display = 'none';
+            
+            
+            // Guardar el tiempo de la última marcación
+            lastMarcacionTime = Date.now();
+
+            // Actualizar datos de la persona
+            document.getElementById('nombre-persona').textContent = marcacion.nombre;
+
+            const fechaIni = new Date(marcacion.fecha_ini);
+            const fechaFin = new Date(marcacion.fecha_fin);
+
+            document.getElementById('fecha-ini-fin').textContent = 'venc: '+ formatearFecha( fechaFin );
+
+            // Formatear fecha y hora
+            const fecha = new Date(marcacion.datetime);
+            // document.getElementById('datetime').textContent = fecha.toLocaleString('es-ES');
+            document.getElementById('datetime').textContent = 'Saldo de ' + marcacion.saldo_dias + ' días';
+
+            // Actualizar información de la terminal
+            document.getElementById('terminal-name').textContent = marcacion.terminalName;
+            document.getElementById('paquete-id').textContent = marcacion.paquete;
+            document.getElementById('persona-code').textContent = marcacion.codigo;
+
+            // Actualizar estado
+            let estadoTexto = '';
+            let estadoClass = '';
+            
+            if ((marcacion.cercaDeVencer === true || marcacion.cercaDeVencer === 1) && (marcacion.habilitado === true || marcacion.habilitado === 1)) {
+                // Estado amarillo - Cerca de vencer
+                estadoTexto = '<span class="text-warning">⚠ Cerca de Vencer</span>';
+                estadoClass = 'status-warning';
+            } else if (marcacion.habilitado === 1 || marcacion.habilitado === true) {
+                // Estado verde - Marcación válida
+                estadoTexto = '<span class="text-success">✓ Acceso Permitido</span>';
+                estadoClass = 'status-allowed';
+            } else {
+                // Estado rojo - Marcación inválida
+                estadoTexto = '<span class="text-danger">✗ Acceso Denegado</span>';
+                estadoClass = 'status-denied';
+            }
+            
+            document.getElementById('estado').innerHTML = estadoTexto;
+
+            // Actualizar foto
+            const fotoContainer = document.getElementById('foto-container');
+            if (marcacion.foto && marcacion.foto !== 'Sin Foto') {
+                fotoContainer.innerHTML = `<img src="/api/imagen/${marcacion.foto}" alt="Foto" style="width:100%;height:100%;object-fit:cover;">`;
+            } else {
+                fotoContainer.innerHTML = 'Sin Foto';
+            }
+
+            // Cambiar borde según estado de acceso
+            const card = document.querySelector('.marcacion-card');
+            card.classList.remove('status-allowed', 'status-denied', 'status-warning');
+            card.classList.add(estadoClass);
+            
+            // Reiniciar el contador de reset
+            iniciarContadorReset();
+        }
+
+        function iniciarContadorReset() {
+            // Limpiar timeout anterior si existe
+            if (resetTimeout) {
+                clearTimeout(resetTimeout);
+            }
+
+            // Configurar timeout para resetear la interfaz después de 10 segundos sin nueva marcación
+            resetTimeout = setTimeout(() => {
+                resetearInterfaz();
+            }, RESET_TIME);
+        }
+
+        function resetearInterfaz() {
+
+            //desactivar card
+            marcacionCard.style.display = 'none';
+            fondoCard.style.display = displayOriginalCard;
+
+            // Restablecer a estado por defecto
+            document.getElementById('nombre-persona').textContent = 'Esperando marcación...';
+            document.getElementById('fecha-ini-fin').textContent = '-';
+            document.getElementById('datetime').textContent = '-';
+            document.getElementById('terminal-name').textContent = '-';
+            document.getElementById('estado').textContent = '-';
+            document.getElementById('paquete-id').textContent = '-';
+            document.getElementById('persona-code').textContent = '-';
+            document.getElementById('foto-container').innerHTML = 'Sin Foto';
+            
+            // Restablecer estilo de la tarjeta
+            const card = document.querySelector('.marcacion-card');
+            card.classList.remove('status-allowed', 'status-denied', 'status-warning');            
+        }
+
+    </script>
+</body>
+</html>

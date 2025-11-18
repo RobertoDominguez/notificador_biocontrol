@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminales</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .terminal-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .terminal-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header py-4 mb-4">
+        <div class="container">
+            <h1 class="text-center">Seleccione una Terminal</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row" id="terminales-container">
+            <!-- Las terminales se cargarán aquí dinámicamente -->
+        </div>
+    </div>
+
+    <script>
+        // Cargar terminales al iniciar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarTerminales();
+        });
+
+        function cargarTerminales() {
+            fetch('/api/terminales')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        mostrarTerminales(data.data);
+                    } else {
+                        console.error('Error al cargar terminales');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function mostrarTerminales(terminales) {
+            const container = document.getElementById('terminales-container');
+            
+            if (terminales.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info text-center">
+                            No hay terminales disponibles
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = terminales.map(terminal => `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card terminal-card h-100" onclick="seleccionarTerminal('${terminal.name}')">
+                        <div class="card-body">
+                            <h5 class="card-title">${terminal.name}</h5>
+                            <p class="card-text mb-1">
+                                <strong>Código:</strong> ${terminal.code}
+                            </p>
+                            <p class="card-text mb-1">
+                                <strong>GUID:</strong> ${terminal.guid}
+                            </p>
+                            <p class="card-text">
+                                <strong>Group ID:</strong> ${terminal.GroupId}
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <small class="text-muted">Haga click para ver marcaciones</small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function seleccionarTerminal(terminalName) {
+            // Redirigir a la página de marcación con el código de terminal
+            window.location.href = `/marcacion?terminal=${terminalName}`;
+        }
+    </script>
+</body>
+</html>

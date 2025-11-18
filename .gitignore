@@ -1,0 +1,9 @@
+/build
+/dist
+/releases
+/my_enviroment
+config
+config_open.json
+config_rele.json
+fondo.jpeg
+logo.webp
