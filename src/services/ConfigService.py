@@ -174,7 +174,10 @@ class ConfigService:
                 file.write(f"PASSWORD2={self.password2}\n")
                 file.write("\n")
 
-                file.write("#QUE SISTEMA UTILIZA PARA LA DB2 1: FitGym  2: GymControl\n")
+                file.write("#QUE SISTEMA UTILIZA PARA LA DB2\n")
+                file.write("# 1: BioApp + FitGym\n")
+                file.write("# 2: BioApp + GymControl \n")
+                file.write("# 3: Access + GymControl\n")
                 file.write(f"SISTEMA={self.sistema}\n")
                 file.write("\n")
 

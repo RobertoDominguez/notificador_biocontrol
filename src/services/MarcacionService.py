@@ -62,7 +62,7 @@ class MarcacionService:
             )
 
     def cachearGymDB(self):
-        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'MYSQL' and self.config.sistema == 1 :
+        if self.config.driver2 == 'MYSQL' and self.config.sistema == 1 :
             resultGym = self.conndbgym.execute_query("SELECT Carnet,ClieNombre,Membresia,FechaIni,FechaFin,Paquete,SucNombre,Habilitado FROM acceso ", ( ))
             if len(resultGym)>0:
                 self.cachegym = []
@@ -82,7 +82,7 @@ class MarcacionService:
                 }
                 self.cachegym.append(row)
 
-        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'SQLSRV' and self.config.sistema == 2:
+        if self.config.driver2 == 'SQLSRV' and (self.config.sistema == 2 or self.config.sistema == 3):
             resultGym = self.conndbgym.execute_query("SELECT c.codigo, CONCAT(c.nombres, c.apellidos) as nombre_completo , p.nombre as membresia," \
             "v.fecha_desde, v.fecha_hasta, p.nombre as nombre_paquete,'' as suc_nombre, 1 as habilitado " \
             "FROM Venta as v JOIN Paquete as p ON v.id_paquete = p.id JOIN Cliente as c ON c.id = v.id_cliente " \
@@ -125,10 +125,15 @@ class MarcacionService:
         return result
 
     def vaciarColaDeEspera(self):
-        if self.config.driver == 'SQLSRV' :
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2):
             print('Vaciando cola de espera...')
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set mostrado = 1 where mostrado = 0",())
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set abierto = 1 where abierto = 0",())
+            
+        if self.config.driver == 'SQLSRV' and self.config.sistema == 3:
+            print('Vaciando cola de espera...')
+            resultBioApp = self.conndbbioapp.execute_query("UPDATE acc_monitor_log set mostrado = 1 where mostrado = 0",())
+            resultBioApp = self.conndbbioapp.execute_query("UPDATE acc_monitor_log set abierto = 1 where abierto = 0",())
 
     def verificarMarcacion(self,terminal,relay=False):
         marcacion = None
@@ -137,7 +142,8 @@ class MarcacionService:
             return Exception('no configurado')
         
 
-        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'MYSQL' and self.config.sistema == 1 :
+        # BioApp
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2):
             if not relay:
                 resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
                 ' JOIN acc."User" as u ON a.UserCode=u.Code' \
@@ -203,17 +209,19 @@ class MarcacionService:
 
                 self.intento = 0  
 
-        # Falta completar y probar para la conexion 2, pero ya esta la query para cache
-        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'SQLSRV' and self.config.sistema == 2:
+
+
+
+        # Access
+        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'SQLSRV' and self.config.sistema == 3:
             if not relay:
-                resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
-                ' JOIN acc."User" as u ON a.UserCode=u.Code' \
-                " WHERE a.mostrado = 0 AND a.TerminalName = %s",(terminal,))
+                resultBioApp = self.conndbbioapp.execute_query("SELECT TOP 1 a.id,a.card_no,a.time,1 as Allowed,m.sn,a.device_name,m.ip,'' as meta"\
+                'FROM acc_monitor_log as a JOIN Machines as m ON a.device_id = m.id'\
+                "WHERE a.mostrado = 0 AND a.device_name = %s",(terminal,))
             if relay:
-                resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
-                ' JOIN acc."User" as u ON a.UserCode=u.Code' \
-                " WHERE a.abierto = 0 AND a.TerminalName = %s",(terminal,))
-            
+                resultBioApp = self.conndbbioapp.execute_query("SELECT TOP 1 a.id,a.card_no,a.time,1 as Allowed,m.sn,a.device_name,m.ip,'' as meta"\
+                'FROM acc_monitor_log as a JOIN Machines as m ON a.device_id = m.id'\
+                "WHERE a.abierto = 0 AND a.device_name = %s",(terminal,))
 
             r = None
             if len(resultBioApp) > 0:
@@ -235,7 +243,7 @@ class MarcacionService:
 
             if r != None and g != None:
                 foto = 'Sin Foto'
-                jsonMetaImage = json.loads(r[7]).get("photoFileName")
+                jsonMetaImage = None #json.loads(r[7]).get("photoFileName")
                 if jsonMetaImage is not None:
                     foto = str(jsonMetaImage) + '.' + self.config.extension_images
 
@@ -253,9 +261,9 @@ class MarcacionService:
                 
                 #pone en mostrada la marcacion
                 if not relay:
-                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set mostrado = 1 WHERE Id = %s",(r[0],))
+                    self.conndbbioapp.execute_query("UPDATE acc_monitor_log Set mostrado = 1 WHERE Id = %s",(r[0],))
                 if relay:
-                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set abierto = 1 WHERE Id = %s",(r[0],))   
+                    self.conndbbioapp.execute_query("UPDATE acc_monitor_log Set abierto = 1 WHERE Id = %s",(r[0],))   
 
             if r != None and g == None:
                 self.intento = self.intento + 1
@@ -264,9 +272,9 @@ class MarcacionService:
             if r != None and g == None and self.intento > 3:
                 #pone en mostrada la marcacion
                 if not relay:
-                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set mostrado = 1 WHERE Id = %s",(r[0],))
+                    self.conndbbioapp.execute_query("UPDATE acc_monitor_log Set mostrado = 1 WHERE Id = %s",(r[0],))
                 if relay:
-                    self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set abierto = 1 WHERE Id = %s",(r[0],))   
+                    self.conndbbioapp.execute_query("UPDATE acc_monitor_log Set abierto = 1 WHERE Id = %s",(r[0],))   
 
                 self.intento = 0  
         
