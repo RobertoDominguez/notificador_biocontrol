@@ -84,7 +84,8 @@ class MarcacionService:
 
         if self.config.driver2 == 'SQLSRV' and (self.config.sistema == 2 or self.config.sistema == 3):
             resultGym = self.conndbgym.execute_query("SELECT c.codigo, CONCAT(c.nombres, c.apellidos) as nombre_completo , p.nombre as membresia," \
-            "v.fecha_desde, v.fecha_hasta, p.nombre as nombre_paquete,'' as suc_nombre, 1 as habilitado " \
+            "v.fecha_desde, v.fecha_hasta, p.nombre as nombre_paquete,'' as suc_nombre, " \
+            "CASE WHEN  fecha_desde <= CAST(GETDATE() AS DATE) AND fecha_hasta >= CAST(GETDATE() AS DATE) THEN 1 else 0 END as habilitado "\
             "FROM Venta as v JOIN Paquete as p ON v.id_paquete = p.id JOIN Cliente as c ON c.id = v.id_cliente " \
             "WHERE v.cancelado = 1 AND v.anulado = 0 ", ( ))
 
@@ -129,7 +130,7 @@ class MarcacionService:
             print('Vaciando cola de espera...')
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set mostrado = 1 where mostrado = 0",())
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set abierto = 1 where abierto = 0",())
-            
+
         if self.config.driver == 'SQLSRV' and self.config.sistema == 3:
             print('Vaciando cola de espera...')
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc_monitor_log set mostrado = 1 where mostrado = 0",())
@@ -137,6 +138,9 @@ class MarcacionService:
 
     def verificarMarcacion(self,terminal,relay=False):
         marcacion = None
+
+        if self.firstEntry:
+            return marcacion
 
         if self.config.config == 0:
             return Exception('no configurado')
@@ -157,7 +161,7 @@ class MarcacionService:
             r = None
             if len(resultBioApp) > 0:
                 r = resultBioApp[0]
-                print("Nueva Marcacion: "+r[1])
+                print("Nueva Marcacion: "+str(r[1]))
             
             g = None
             habilitado = 0
@@ -168,6 +172,7 @@ class MarcacionService:
                     g = resultGym[0]
                     for gym in resultGym:
                         if gym['Habilitado'] == 1 or gym['Habilitado'] == '1' or gym['Habilitado'] == True:
+                            g = gym
                             habilitado = 1
 
                     
@@ -182,7 +187,7 @@ class MarcacionService:
                 fecha_actual = date.today()
 
                 diferencia = fecha_fin - fecha_actual
-                dias_diferencia = diferencia.days + 1
+                dias_diferencia = diferencia.days
                 if (dias_diferencia < 0):
                     dias_diferencia = 0
                 cercaDeVencer = dias_diferencia <= self.config.dias_alerta
@@ -215,13 +220,13 @@ class MarcacionService:
         # Access
         if self.config.driver == 'SQLSRV' and self.config.driver2 == 'SQLSRV' and self.config.sistema == 3:
             if not relay:
-                resultBioApp = self.conndbbioapp.execute_query("SELECT TOP 1 a.id,a.card_no,a.time,1 as Allowed,m.sn,a.device_name,m.ip,'' as meta"\
-                'FROM acc_monitor_log as a JOIN Machines as m ON a.device_id = m.id'\
-                "WHERE a.mostrado = 0 AND a.device_name = %s",(terminal,))
+                resultBioApp = self.conndbbioapp.execute_query("SELECT TOP 1 a.id,a.pin,a.time,m.sn,1 as Allowed,a.device_name,m.ip,'' as meta"\
+                ' FROM acc_monitor_log as a JOIN Machines as m ON a.device_id = m.id'\
+                " WHERE a.mostrado = 0 AND a.device_name = %s",(terminal,))
             if relay:
-                resultBioApp = self.conndbbioapp.execute_query("SELECT TOP 1 a.id,a.card_no,a.time,1 as Allowed,m.sn,a.device_name,m.ip,'' as meta"\
-                'FROM acc_monitor_log as a JOIN Machines as m ON a.device_id = m.id'\
-                "WHERE a.abierto = 0 AND a.device_name = %s",(terminal,))
+                resultBioApp = self.conndbbioapp.execute_query("SELECT TOP 1 a.id,a.pin,a.time,m.sn,1 as Allowed,a.device_name,m.ip,'' as meta"\
+                ' FROM acc_monitor_log as a JOIN Machines as m ON a.device_id = m.id'\
+                " WHERE a.abierto = 0 AND a.device_name = %s",(terminal,))
 
             r = None
             if len(resultBioApp) > 0:
@@ -232,11 +237,12 @@ class MarcacionService:
             habilitado = 0
             if r != None:
                 resultGym = self.queryACache(r[1])
-
                 if len(resultGym) > 0:
                     g = resultGym[0]
+                    print(g)
                     for gym in resultGym:
                         if gym['Habilitado'] == 1 or gym['Habilitado'] == '1' or gym['Habilitado'] == True:
+                            g = gym
                             habilitado = 1
 
                     
@@ -248,10 +254,10 @@ class MarcacionService:
                     foto = str(jsonMetaImage) + '.' + self.config.extension_images
 
                 fecha_fin = g['FechaFin']
-                fecha_actual = date.today()
+                fecha_actual = datetime.today()
 
                 diferencia = fecha_fin - fecha_actual
-                dias_diferencia = diferencia.days + 1
+                dias_diferencia = diferencia.days
                 if (dias_diferencia < 0):
                     dias_diferencia = 0
                 cercaDeVencer = dias_diferencia <= self.config.dias_alerta

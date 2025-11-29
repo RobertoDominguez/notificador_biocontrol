@@ -70,18 +70,32 @@ update acc."User" set Meta = '{"role": "2","hasPassword":"false","hasFingerPrint
 
 -----------------------------------------------------------
 
+use GymControl
+
+--select CAST(GETDATE() AS DATE);
+
+SELECT c.codigo, CONCAT(c.nombres, c.apellidos) as nombre_completo , p.nombre as membresia,
+            v.fecha_desde, v.fecha_hasta, p.nombre as nombre_paquete,'' as suc_nombre,
+			CASE WHEN  fecha_desde <= CAST(GETDATE() AS DATE)
+			AND fecha_hasta >= CAST(GETDATE() AS DATE) THEN 1 else 0 END as habilitado
+            FROM Venta as v JOIN Paquete as p ON v.id_paquete = p.id JOIN Cliente as c ON c.id = v.id_cliente 
+            WHERE v.cancelado = 1 AND v.anulado = 0
+			AND c.codigo = '14072904'
+
 use Access
 
 select * from acc_monitor_log order by id desc
 
-SELECT TOP 1 a.id,a.card_no,a.time,a.card_no,1 as Allowed,m.sn,a.device_name,m.ip,'' as meta
+
+update acc_monitor_log set abierto = 0, mostrado = 0, pin = '14072904' where id = 1437
+
+update acc_monitor_log set abierto = 0, mostrado = 0, pin = '14072904' where id = 1438
+
+select * from acc_monitor_log where id = 1437
+
+SELECT TOP 1 a.id,a.pin,a.time,m.sn,a.device_name,1 as Allowed,m.ip,'' as meta
 FROM Acc_monitor_log as a
 JOIN Machines as m ON a.device_id = m.id
 WHERE a.mostrado = 0 AND a.device_name = %s",(terminal,)
 
 select * from Machines
-
-SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
-                ' JOIN acc."User" as u ON a.UserCode=u.Code' \
-                " WHERE a.mostrado = 0 AND a.TerminalName = %s",(terminal,))
-

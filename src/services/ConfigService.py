@@ -184,7 +184,7 @@ class ConfigService:
                 file.write("#CONFIGURACIONES WEB\n")
                 file.write(f"WEB_PORT={self.web_port}\n")
                 file.write(f"PAHT_IMAGES={self.sistema}\n")
-                file.write(f"EXTENSION_IMAGES={self.web_port}\n")
+                file.write(f"EXTENSION_IMAGES={self.extension_images}\n")
                 file.write(f"SECONDS_NOTIFICATION={self.sistema}\n")
                 file.write(f"DIAS_ALERTA={self.dias_alerta}\n")
                 file.write(f"LOGO_PATH={self.logo_path}\n")

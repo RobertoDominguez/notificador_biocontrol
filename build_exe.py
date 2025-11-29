@@ -74,7 +74,8 @@ def build_exe(version):
         '--hidden-import=services.MarcacionService',
         '--hidden-import=services.TerminalService',
         '--hidden-import=services.ConfigService',
-        '--hidden-import=services.AutoOpenSercice',
+        '--hidden-import=services.AutoOpenService',
+        '--hidden-import=services.ReleService',
 
 
         '--distpath', str(dist_dir),

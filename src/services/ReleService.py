@@ -25,6 +25,7 @@ class ReleService:
             print(f"Creando archivo de configuración: {config_file}")
             default_config = {
                             "exe": "C:\\RelayCmd.exe",
+                            "rele_version" : 1,
                             "rele": {
                                 "1": {
                                     "1": {
@@ -80,9 +81,13 @@ class ReleService:
             duracion_pulso = 0
             ID_Rele = 0
             ReleN = 0
+
+            if marcacion.habilitado == 0 or marcacion.habilitado == False or marcacion.habilitado == '0':
+                return
+
             for ID in self.config['rele']:
                 for ReleNumber in self.config['rele'][ID]:
-                    if self.config['rele'][ID][ReleNumber]['serial_reloj'] == marcacion.terminalCode:
+                    if self.config['rele'][ID][ReleNumber]['serial_reloj'] == str(marcacion.terminalCode):
                         serial_reloj = self.config['rele'][ID][ReleNumber]['serial_reloj']
                         duracion_pulso = self.config['rele'][ID][ReleNumber]['duracion_pulso']
                         ID_Rele = ID
@@ -90,31 +95,53 @@ class ReleService:
 
             if serial_reloj != "":
                 try:
-                    print("Abriendo Relay: "+ marcacion.terminalCode + " ID=" +str(ID_Rele) + " NRO="+str(ReleN) )
 
-                    cmd = [
-                        self.config['exe'],
-                        f"ID={ID_Rele}",
-                        f"ON={ReleN}"
-                    ]
+                    # RelayCmd
+                    if self.config['rele_version'] == 1:
+                        print("Abriendo Relay: "+ str(marcacion.terminalCode) + " t=" + str(ID_Rele) + " r="+str(ReleN) )
 
-                    process = subprocess.Popen(cmd)
+                        cmd = [
+                            self.config['exe'],
+                            f"ID={ID_Rele}", # ID=Nro Placa
+                            f"ON={ReleN}"    # ON=1,2,3,4 abre los rele 1,2,3,4, tambien puede abrir uno solo
+                        ]
 
-                    time.sleep(duracion_pulso)
+                        process = subprocess.Popen(cmd)
 
-                    cmd = [
-                        self.config['exe'],
-                        f"ID={ID_Rele}",
-                        f"OFF={ReleN}"
-                    ]
+                        time.sleep(duracion_pulso)
 
-                    process = subprocess.Popen(cmd)
+                        cmd = [
+                            self.config['exe'],
+                            f"ID={ID_Rele}",
+                            f"OFF={ReleN}"
+                        ]
+
+                        process = subprocess.Popen(cmd)
+
+                    # RelayOpener
+                    if self.config['rele_version'] == 2:
+                        print("Abriendo Relay: "+ str(marcacion.terminalCode) + " t=" + str(ID_Rele) + " r="+str(ReleN) )
+
+                        cmd = [
+                            self.config['exe'],
+                            f"-t {ID_Rele}", # -t=type (1 o 2)
+                            f"-r {ReleN}",    # -r=relay (1 o 2)
+                            f"-s {duracion_pulso}" #seconds
+                        ]
+
+                        process = subprocess.Popen(cmd)
+
+                        time.sleep(duracion_pulso)
+
                 except Exception as e:
-                    print(f"ERROR abriendo rele {ID_Rele}: {e}")
+                    print(f"ERROR abriendo rele {ID_Rele}, {ReleN}: {e}")
             else:
-                print("Error en configuracion, serial no encontrado" + marcacion.terminalCode)
+                print("Error en configuracion, serial no encontrado" + str(marcacion.terminalCode))
         
 
     
 
 rele_service = ReleService()
+
+# RelayOpener.exe -r 1 -s 1 -t 2
+# r = 1 o 2, s = segundos t = tipo
