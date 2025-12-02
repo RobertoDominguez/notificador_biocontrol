@@ -32,6 +32,10 @@ else:
 def index():
     return render_template('terminales.html')
 
+@app.route('/marcaciones')
+def marcaciones():
+    return render_template('marcaciones.html')
+
 @app.route('/marcacion')
 def marcacion():
     return render_template('marcacion.html')

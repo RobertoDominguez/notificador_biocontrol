@@ -51,6 +51,14 @@ class TerminalService:
                 print(terminal.to_dict())
                 terminales.append(terminal.to_dict())
 
+        if self.config.driver == 'SQLSRV' and self.config.sistema == 4 :
+            resultBioApp = self.conndbbioapp.execute_query('SELECT m.ControlID, m.Serial, m.Name, 1 as group_id FROM TControl as m order by orden asc',())
+
+            for r in resultBioApp:
+                terminal = Terminal(r[0],r[1],r[2],r[3])
+                print(terminal.to_dict())
+                terminales.append(terminal.to_dict())
+
         return terminales
     
 terminal_service = TerminalService()

@@ -74,7 +74,7 @@ use GymControl
 
 --select CAST(GETDATE() AS DATE);
 
-SELECT c.codigo, CONCAT(c.nombres, c.apellidos) as nombre_completo , p.nombre as membresia,
+SELECT c.codigo, CONCAT(c.nombres,' ',c.apellidos) as nombre_completo , p.nombre as membresia,
             v.fecha_desde, v.fecha_hasta, p.nombre as nombre_paquete,'' as suc_nombre,
 			CASE WHEN  fecha_desde <= CAST(GETDATE() AS DATE)
 			AND fecha_hasta >= CAST(GETDATE() AS DATE) THEN 1 else 0 END as habilitado
@@ -99,3 +99,71 @@ JOIN Machines as m ON a.device_id = m.id
 WHERE a.mostrado = 0 AND a.device_name = %s",(terminal,)
 
 select * from Machines
+
+
+
+
+
+
+
+
+
+
+
+----------------------- MINI SQL ------------------------------
+use AXData
+
+-- personas
+select EmployeeName,EnglishName,count(*) from TEmployee group by  EmployeeName,EnglishName having count(*) > 1
+select * from TEmployee where EmployeeName LIKE '%VICTORIA'
+-- dispositivos
+select * from TControl
+-- marcaciones
+select TOP 1000 * from TEvent order by EventID desc
+
+update TControl set Name = 'Terminal_3' where orden = 3
+
+
+select ISNULL('a', '') + ' ' + ISNULL('', '')
+
+SELECT TOP 100 e.EventID,e.CardNo,e.EventTime,c.Code,1 as allowed,c.Name,c.IP,'' as meta,
+p.CardNo,ISNULL(p.EmployeeName, '') + ' ' + ISNULL(p.EnglishName, '') AS NombreCompleto,'membresia' as membresia,p.RegDate,p.EndDate,'paquete' as nombre_paquete,'' as suc_nombre,
+CASE 
+        WHEN DATEADD(day, DATEDIFF(day, 0, p.RegDate), 0) <= DATEADD(day, DATEDIFF(day, 0, GETDATE()), 0)
+         AND DATEADD(day, DATEDIFF(day, 0, p.EndDate), 0) >= DATEADD(day, DATEDIFF(day, 0, GETDATE()), 0)
+        THEN 1 
+        ELSE 0 
+    END as habilitado
+FROM TEvent as e
+JOIN TControl as c ON e.ControlID = c.ControlID
+JOIN TEmployee as p ON e.CardNo = p.CardNo
+WHERE p.deleted = 0 
+AND e.mostrado = 0
+
+
+
+AND c.Name = '%%'
+
+--1F7184
+UPDATE TEvent set mostrado = 0, EventType = 6 where EventID = 803958 or EventID = 804797
+
+
+select *
+FROM TEvent as e
+JOIN TControl as c ON e.ControlID = c.ControlID
+JOIN TEmployee as p ON e.EmployeeID = p.EmployeeID
+where EventID = 803958
+
+--     16090674     
+
+select * from TEmployee where cardNo=10004612 or CardNo=16707001
+
+select top 100  * from TEvent where mostrado = 0
+
+
+
+
+
+
+
+
