@@ -7,14 +7,24 @@ from datetime import datetime, timedelta, date
 import threading
 import time
 
+from collections import defaultdict
+
+def to_date(value):
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    return None
+
 class MarcacionService:
     def __init__(self):
         self.config = config_service
         self.conndbbioapp = None
         self.conndbgym = None
-        self.cachegym = []
+        self.cachegym = defaultdict(list)
         self.firstEntry = True
-        self.intento = 0
         self.connect()
         
         # Iniciar el hilo de actualización
@@ -62,10 +72,10 @@ class MarcacionService:
             )
 
     def cachearGymDB(self):
-        if self.config.driver2 == 'MYSQL' and self.config.sistema == 1 :
+        if (self.config.driver2 == 'MYSQL' or self.config.driver2 == 'SQLSRV') and self.config.sistema == 1 :
             resultGym = self.conndbgym.execute_query("SELECT Carnet,ClieNombre,Membresia,FechaIni,FechaFin,Paquete,SucNombre,Habilitado FROM acceso ", ( ))
-            if len(resultGym)>0:
-                self.cachegym = []
+            if len(resultGym) > 0:
+                self.cachegym = defaultdict(list)
             else:
                 print('Error en cache: 0 Tuplas recibidas')
 
@@ -80,7 +90,7 @@ class MarcacionService:
                     'SucNombre' : gym[6],
                     'Habilitado' : gym[7],
                 }
-                self.cachegym.append(row)
+                self.cachegym[gym[0]].append(row)
 
         if self.config.driver2 == 'SQLSRV' and (self.config.sistema == 2 or self.config.sistema == 3):
             resultGym = self.conndbgym.execute_query("SELECT c.codigo, CONCAT(c.nombres, ' ', c.apellidos) as nombre_completo , p.nombre as membresia," \
@@ -90,7 +100,7 @@ class MarcacionService:
             "WHERE v.cancelado = 1 AND v.anulado = 0 ", ( ))
 
             if len(resultGym) > 0:
-                self.cachegym = []
+                self.cachegym = defaultdict(list)
             else:
                 print('Error en cache: 0 Tuplas recibidas')
 
@@ -105,25 +115,23 @@ class MarcacionService:
                     'SucNombre' : gym[6],
                     'Habilitado' : gym[7],
                 }
-                self.cachegym.append(row)
+                self.cachegym[gym[0]].append(row)
         
         if self.config.driver == 'SQLSRV' and self.firstEntry:
             self.firstEntry = False
             self.vaciarColaDeEspera()
+        
+        if self.config.debug == 1:
+            print('Cache DB2: '+str(len(self.cachegym)))
     
     def worker(self):
         while True:
-            # print('Cache DB2')
             self.cachearGymDB()
             time.sleep(self.config.cache_time)  # Esperar x segundos
 
 
     def queryACache(self,carnet):
-        result = []
-        for gym in self.cachegym:
-            if gym['Carnet'] == carnet:
-                result.append(gym)
-        return result
+        return self.cachegym.get(str(carnet), [])
 
     def vaciarColaDeEspera(self):
         if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2):
@@ -141,7 +149,8 @@ class MarcacionService:
             resultBioApp = self.conndbbioapp.execute_query("UPDATE TEvent set mostrado = 1 where mostrado = 0",())
             resultBioApp = self.conndbbioapp.execute_query("UPDATE TEvent set abierto = 1 where abierto = 0",())
 
-    def verificarMarcacion(self,terminal,relay=False):
+    #para evitar delay en update le paso por parametro una funcion que se ejecuta justo antes del update (para abrir el relay por ejemplo)
+    def verificarMarcacion(self,terminal,relay=False, funcion=None):
         marcacion = None
 
         if self.firstEntry:
@@ -164,7 +173,7 @@ class MarcacionService:
             
 
             r = None
-            if len(resultBioApp) > 0:
+            if resultBioApp != None and len(resultBioApp) > 0:
                 r = resultBioApp[0]
                 print("Nueva Marcacion: "+str(r[1]))
             
@@ -188,7 +197,10 @@ class MarcacionService:
                 if jsonMetaImage is not None:
                     foto = str(jsonMetaImage) + '.' + self.config.extension_images
 
-                fecha_fin = g['FechaFin']
+                if self.config.debug == 1:
+                    print(g['FechaFin'])
+
+                fecha_fin = to_date( g['FechaFin'] )
                 fecha_actual = date.today()
 
                 diferencia = fecha_fin - fecha_actual
@@ -200,24 +212,25 @@ class MarcacionService:
                 marcacion = Marcacion(r[1],r[2],r[3],r[4],r[5],r[6],g['ClieNombre'],habilitado,cercaDeVencer,foto,g['Paquete'],g['FechaIni'],
                                       g['FechaFin'],self.config.seconds_notification,dias_diferencia)
                 
+
+                #realiza la accion
+                if marcacion is not None and callable(funcion):
+                    funcion(marcacion)
+
                 #pone en mostrada la marcacion
                 if not relay:
                     self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set mostrado = 1 WHERE Id = %s",(r[0],))
                 if relay:
                     self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set abierto = 1 WHERE Id = %s",(r[0],))   
-
-            if r != None and g == None:
-                self.intento = self.intento + 1
 
             #Intenta 3 veces antes de poner en mostrada la marcacion (en caso de algun error que no se trabe)
-            if r != None and g == None and self.intento > 3:
+            if r != None and g == None:
+                print('Error: Persona No encontrada en la DB2')
                 #pone en mostrada la marcacion
                 if not relay:
                     self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set mostrado = 1 WHERE Id = %s",(r[0],))
                 if relay:
                     self.conndbbioapp.execute_query("UPDATE acc.AccessLog Set abierto = 1 WHERE Id = %s",(r[0],))   
-
-                self.intento = 0  
 
 
 
@@ -234,7 +247,7 @@ class MarcacionService:
                 " WHERE a.abierto = 0 AND a.device_name = %s",(terminal,))
 
             r = None
-            if len(resultBioApp) > 0:
+            if resultBioApp != None and len(resultBioApp) > 0:
                 r = resultBioApp[0]
                 print("Nueva Marcacion: "+r[1])
             
@@ -270,24 +283,24 @@ class MarcacionService:
                 marcacion = Marcacion(r[1],r[2],r[3],r[4],r[5],r[6],g['ClieNombre'],habilitado,cercaDeVencer,foto,g['Paquete'],g['FechaIni'],
                                       g['FechaFin'],self.config.seconds_notification,dias_diferencia)
                 
+                #realiza la accion
+                if marcacion is not None and callable(funcion):
+                    funcion(marcacion)
+
                 #pone en mostrada la marcacion
                 if not relay:
                     self.conndbbioapp.execute_query("UPDATE acc_monitor_log Set mostrado = 1 WHERE Id = %s",(r[0],))
                 if relay:
                     self.conndbbioapp.execute_query("UPDATE acc_monitor_log Set abierto = 1 WHERE Id = %s",(r[0],))   
+
 
             if r != None and g == None:
-                self.intento = self.intento + 1
-
-            #Intenta 3 veces antes de poner en mostrada la marcacion (en caso de algun error que no se trabe)
-            if r != None and g == None and self.intento > 3:
+                print('Error: Persona No encontrada en la DB2')
                 #pone en mostrada la marcacion
                 if not relay:
                     self.conndbbioapp.execute_query("UPDATE acc_monitor_log Set mostrado = 1 WHERE Id = %s",(r[0],))
                 if relay:
                     self.conndbbioapp.execute_query("UPDATE acc_monitor_log Set abierto = 1 WHERE Id = %s",(r[0],))   
-
-                self.intento = 0  
         
 
         # MINI SQL
@@ -326,7 +339,7 @@ class MarcacionService:
                 
             r = None
             habilitado = 0
-            if len(resultBioApp) > 0:
+            if resultBioApp != None and len(resultBioApp) > 0:
                 r = resultBioApp[0]
                 print("Nueva Marcacion: "+r[1])
             
@@ -356,6 +369,10 @@ class MarcacionService:
                 marcacion = Marcacion(r[1],r[2],r[3],allowed,r[5],r[6],r[9],habilitado,cercaDeVencer,foto,r[13],r[11],
                                       r[12],self.config.seconds_notification,dias_diferencia)
                 
+                #realiza la accion
+                if marcacion is not None and callable(funcion):
+                    funcion(marcacion)
+
                 #pone en mostrada la marcacion
                 if not relay:
                     self.conndbbioapp.execute_query("UPDATE TEvent Set mostrado = 1 WHERE EventId = %s",(r[0],))

@@ -71,8 +71,7 @@ class ReleService:
     
     def worker(self,terminalName):
         while True:
-            marcacion = marcacion_service.verificarMarcacion(terminalName,relay=True)
-            self.abrirRelay(marcacion)
+            marcacion = marcacion_service.verificarMarcacion(terminalName,relay=True, funcion = self.abrirRelay)
             time.sleep(1)  # Esperar 1 segundos
 
     def abrirRelay(self, marcacion):
@@ -136,7 +135,7 @@ class ReleService:
                 except Exception as e:
                     print(f"ERROR abriendo rele {ID_Rele}, {ReleN}: {e}")
             else:
-                print("Error en configuracion, serial no encontrado" + str(marcacion.terminalCode))
+                print("Error en configuracion, serial no encontrado " + str(marcacion.terminalCode))
         
 
     

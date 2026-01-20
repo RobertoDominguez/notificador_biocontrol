@@ -1,3 +1,22 @@
+import ctypes
+
+def prevent_minimize_pause():
+    kernel32 = ctypes.windll.kernel32
+    user32 = ctypes.windll.user32
+    
+    # Obtener handle de la ventana de consola
+    hwnd = kernel32.GetConsoleWindow()
+    
+    if hwnd:
+        # Modificar el estilo extendido de la ventana
+        GWL_EXSTYLE = -20
+        WS_EX_TOOLWINDOW = 0x00000080
+        
+        # Agregar estilo de ventana de herramienta
+        style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style | WS_EX_TOOLWINDOW)
+
+
 from flask import Flask, render_template, request, jsonify
 import os
 import sys
@@ -98,7 +117,7 @@ if __name__ == '__main__':
     # Si no esta el servidor web igual sigue corriendo el programa
     if config_service.web_enabled == 1:
         # Usar Waitress como servidor de producción
-        serve(app, host='0.0.0.0', port=config_service.web_port)
+        serve(app, host='0.0.0.0', port=config_service.web_port,threads=10)
     else:
         try:
             while True:

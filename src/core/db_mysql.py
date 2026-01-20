@@ -20,6 +20,7 @@ class ConnMySQL:
                 user=self.username,
                 password=self.password,
                 charset='utf8mb4',
+                autocommit=True
             )
             print("✅ Conexión MySQL establecida con pymysql")
         except pymysql.Error as e:

@@ -31,6 +31,8 @@ class ConfigService:
         self.web_enabled = 0
         self.rele_enabled = 0
 
+        self.debug = 0
+
         self.getConfigs()
 
     def getConfigs(self):
@@ -104,10 +106,13 @@ class ConfigService:
                         elif key == 'RELE_ENABLED':
                             self.rele_enabled = int(value) if value.isdigit() else 1
 
+                        elif key == 'DEBUG':
+                            self.debug = int(value) if value.isdigit() else 1
+
             return True
         except FileNotFoundError:
             print(f"Error: Archivo de configuración '{self.config_file}' no encontrado, creando archivo...")
-            self.setConfigs(0,'','SQLSRV','localhost',1433,'database','root','','MYSQL','localhost',3306,'dbname','root','',1,8080,'c:/BioApp/images','jpg',3,60,3,'','','',1,1)
+            self.setConfigs(0,'','SQLSRV','localhost',1433,'database','root','','MYSQL','localhost',3306,'dbname','root','',1,8080,'c:/BioApp/images','jpg',3,60,3,'','','',1,1,0)
             return False
         except Exception as e:
             print(f"Error al leer el archivo de configuración: {e}")
@@ -115,7 +120,7 @@ class ConfigService:
 
     def setConfigs(self, config, grupo, driver, host, port, database, user, password, driver2, host2, port2, database2, user2,
                     password2, sistema, web_port, path_images, extension_images, seconds_notification,cache_time,dias_alerta,logo_path, nombre_gym, fondo_path,
-                    web_enabled,rele_enabled):
+                    web_enabled,rele_enabled,debug):
         """Actualiza las configuraciones en memoria y las guarda en el archivo"""
         self.config = config
         self.grupo = grupo
@@ -146,6 +151,8 @@ class ConfigService:
         self.fondo_path = fondo_path
         self.web_enabled = web_enabled
         self.rele_enabled = rele_enabled
+        self.debug = debug
+
         
         # Guardar en archivo
         try:
@@ -200,6 +207,9 @@ class ConfigService:
                 file.write(f"WEB_ENABLED={self.web_enabled}\n")
                 file.write(f"RELE_ENABLED={self.rele_enabled}\n")
  
+                file.write("# MODO DEBUG (1,0) \n")
+                file.write(f"DEBUG={self.debug}\n")
+
             return True
         except Exception as e:
             print(f"Error al guardar la configuración: {e}")
