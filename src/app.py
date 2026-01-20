@@ -16,6 +16,13 @@ def prevent_minimize_pause():
         style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
         user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style | WS_EX_TOOLWINDOW)
 
+        # EN CASO DE NO FUNCIONAR EL METODO DE ARRIBA (set_console_always_active)
+        # Para mantener la consola activa incluso cuando no está en primer plano
+        # Esto afecta el planificador de procesos de Windows
+
+        # SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001
+        # user32.SystemParametersInfoW(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, 0, 0)
+
 
 from flask import Flask, render_template, request, jsonify
 import os
