@@ -1,28 +1,4 @@
-import ctypes
-
-def prevent_minimize_pause():
-    kernel32 = ctypes.windll.kernel32
-    user32 = ctypes.windll.user32
-    
-    # Obtener handle de la ventana de consola
-    hwnd = kernel32.GetConsoleWindow()
-    
-    if hwnd:
-        # Modificar el estilo extendido de la ventana
-        GWL_EXSTYLE = -20
-        WS_EX_TOOLWINDOW = 0x00000080
-        
-        # Agregar estilo de ventana de herramienta
-        style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
-        user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style | WS_EX_TOOLWINDOW)
-
-        # EN CASO DE NO FUNCIONAR EL METODO DE ARRIBA (set_console_always_active)
-        # Para mantener la consola activa incluso cuando no está en primer plano
-        # Esto afecta el planificador de procesos de Windows
-
-        # SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001
-        # user32.SystemParametersInfoW(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, 0, 0)
-
+from core.prevent_pause import prevent_minimize_pause #previene que se pausen los procesos en segundo plano
 
 from flask import Flask, render_template, request, jsonify
 import os
@@ -106,6 +82,9 @@ def abrirNavegadores():
     auto_open_service.main()
 
 if __name__ == '__main__':
+
+    prevent_minimize_pause()    
+
     # Solo abre el navegador cuando se ejecuta directamente (no en .exe)
     if not getattr(sys, 'frozen', False) and config_service.web_enabled == 1:
         threading.Timer(1.5, open_browser).start()
