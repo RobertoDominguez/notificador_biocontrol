@@ -61,10 +61,11 @@ def build_exe(version):
         '--hidden-import=pymssql',
         '--hidden-import=pymysql',
         '--hidden-import=pyautogui',
-
+        '--hidden-import=requests',
 
         '--hidden-import=core.db_mysql',
         '--hidden-import=core.db_sqlsrv',
+        '--hidden-import=core.db_api',
 
         '--hidden-import=models.Marcacion',
         '--hidden-import=models.Terminal',

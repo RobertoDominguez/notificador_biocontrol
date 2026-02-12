@@ -1,5 +1,6 @@
 from core.db_sqlsrv import ConnSQLSRV
 from core.db_mysql import ConnMySQL
+from core.db_api import ConnAPI
 from services.ConfigService import config_service
 from models.Marcacion import Marcacion
 import json
@@ -71,10 +72,16 @@ class MarcacionService:
                 password=self.config.password2
             )
 
+        if self.config.driver2 == 'API':
+            self.conndbgym = ConnAPI(
+                base_url=self.config.host2+":"+self.config.port2,
+                token=self.config.password2
+            )
+
     def cachearGymDB(self):
         if (self.config.driver2 == 'MYSQL' or self.config.driver2 == 'SQLSRV') and self.config.sistema == 1 :
             resultGym = self.conndbgym.execute_query("SELECT Carnet,ClieNombre,Membresia,FechaIni,FechaFin,Paquete,SucNombre,Habilitado FROM acceso ", ( ))
-            if len(resultGym) > 0:
+            if resultGym != None and len(resultGym) > 0:
                 self.cachegym = defaultdict(list)
             else:
                 print('Error en cache: 0 Tuplas recibidas')
@@ -99,7 +106,7 @@ class MarcacionService:
             "FROM Venta as v JOIN Paquete as p ON v.id_paquete = p.id JOIN Cliente as c ON c.id = v.id_cliente " \
             "WHERE v.cancelado = 1 AND v.anulado = 0 ", ( ))
 
-            if len(resultGym) > 0:
+            if resultGym != None and len(resultGym) > 0:
                 self.cachegym = defaultdict(list)
             else:
                 print('Error en cache: 0 Tuplas recibidas')
@@ -121,6 +128,52 @@ class MarcacionService:
             self.firstEntry = False
             self.vaciarColaDeEspera()
         
+        # Cache para API
+        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'API' and self.config.sistema == 5:
+            try:
+                response = self.conndbgym.get(
+                    self.config.database2,
+                    {
+                        "id_py": self.config.user2,
+                        "id_membresia": 0,
+                        "id_cliente": 0,
+                        "nombre": "test"
+                    }
+                )
+
+                detalle = response.get("detalleRespuesta", [])
+                self.cachegym = defaultdict(list)
+
+                hoy = date.today()
+
+                for item in detalle:
+                    carnet = str(item.get("Codigo_C_B"))
+
+                    fecha_ini_raw = item.get("")
+                    fecha_ini = to_date(fecha_ini_raw)
+                    fecha_fin = hoy
+
+                    habilitado = item.get("Estado_B") in (1, "1", True)
+
+                    row = {
+                        'Carnet': carnet,
+                        'ClieNombre': '',      # no aplica
+                        'Membresia': '',       # no aplica
+                        'FechaIni': fecha_ini,
+                        'FechaFin': fecha_fin,
+                        'Paquete': '',         # no aplica
+                        'SucNombre': '',       # no aplica
+                        'Habilitado': habilitado,
+                    }
+
+                    self.cachegym[carnet].append(row)
+
+                if self.config.debug == 1:
+                    print(f'Cache API: {len(self.cachegym)}')
+
+            except Exception as e:
+                print(f'Error cache API: {e}')
+
         if self.config.debug == 1:
             print('Cache DB2: '+str(len(self.cachegym)))
     
@@ -134,7 +187,7 @@ class MarcacionService:
         return self.cachegym.get(str(carnet), [])
 
     def vaciarColaDeEspera(self):
-        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2):
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 5):
             print('Vaciando cola de espera...')
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set mostrado = 1 where mostrado = 0",())
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set abierto = 1 where abierto = 0",())
@@ -378,6 +431,103 @@ class MarcacionService:
                     self.conndbbioapp.execute_query("UPDATE TEvent Set mostrado = 1 WHERE EventId = %s",(r[0],))
                 if relay:
                     self.conndbbioapp.execute_query("UPDATE TEvent Set abierto = 1 WHERE EventId = %s",(r[0],))   
+
+
+
+        # Access con API
+        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'API' and self.config.sistema == 5:
+            if not relay:
+                resultBioApp = self.conndbbioapp.execute_query(
+                    "SELECT TOP 1 a.id,a.pin,a.time,m.sn,1 as Allowed,a.device_name,m.ip,'' as meta "
+                    "FROM acc_monitor_log as a "
+                    "JOIN Machines as m ON a.device_id = m.id "
+                    "WHERE a.mostrado = 0 AND a.device_name = %s",
+                    (terminal,)
+                )
+
+            if relay:
+                resultBioApp = self.conndbbioapp.execute_query(
+                    "SELECT TOP 1 a.id,a.pin,a.time,m.sn,1 as Allowed,a.device_name,m.ip,'' as meta "
+                    "FROM acc_monitor_log as a "
+                    "JOIN Machines as m ON a.device_id = m.id "
+                    "WHERE a.abierto = 0 AND a.device_name = %s",
+                    (terminal,)
+                )
+
+            r = None
+            if resultBioApp and len(resultBioApp) > 0:
+                r = resultBioApp[0]
+                print("Nueva Marcacion:", r[1])
+
+            g = None
+            habilitado = 0
+
+            if r is not None:
+                resultGym = self.queryACache(r[1])
+
+                if len(resultGym) > 0:
+                    g = resultGym[0]
+                    for gym in resultGym:
+                        if gym['Habilitado'] in (1, '1', True):
+                            g = gym
+                            habilitado = 1
+
+            if r is not None and g is not None:
+                fecha_actual = datetime.today()
+                fecha_fin = g['FechaFin']
+
+                diferencia = fecha_fin - fecha_actual.date()
+                dias_diferencia = diferencia.days
+                if dias_diferencia < 0:
+                    dias_diferencia = 0
+
+                cercaDeVencer = dias_diferencia <= self.config.dias_alerta
+
+                marcacion = Marcacion(
+                    r[1],               # carnet
+                    r[2],               # time
+                    r[3],               # sn
+                    r[4],               # allowed
+                    r[5],               # device_name
+                    r[6],               # ip
+                    '',                 # ClieNombre (no aplica)
+                    habilitado,
+                    cercaDeVencer,
+                    'Sin Foto',
+                    '',                 # Paquete
+                    g['FechaIni'],
+                    g['FechaFin'],
+                    self.config.seconds_notification,
+                    dias_diferencia
+                )
+
+                if callable(funcion):
+                    funcion(marcacion)
+
+                if not relay:
+                    self.conndbbioapp.execute_query(
+                        "UPDATE acc_monitor_log SET mostrado = 1 WHERE Id = %s",
+                        (r[0],)
+                    )
+                else:
+                    self.conndbbioapp.execute_query(
+                        "UPDATE acc_monitor_log SET abierto = 1 WHERE Id = %s",
+                        (r[0],)
+                    )
+
+            if r is not None and g is None:
+                print('Error: Persona No encontrada en API')
+
+                if not relay:
+                    self.conndbbioapp.execute_query(
+                        "UPDATE acc_monitor_log SET mostrado = 1 WHERE Id = %s",
+                        (r[0],)
+                    )
+                else:
+                    self.conndbbioapp.execute_query(
+                        "UPDATE acc_monitor_log SET abierto = 1 WHERE Id = %s",
+                        (r[0],)
+                    )
 
 
         return marcacion

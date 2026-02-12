@@ -6,5 +6,6 @@ pyodbc
 mysql-connector-python
 pymssql
 pymysql
+requests
 
 pyautogui
