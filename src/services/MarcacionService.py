@@ -74,7 +74,7 @@ class MarcacionService:
 
         if self.config.driver2 == 'API':
             self.conndbgym = ConnAPI(
-                base_url=self.config.host2+":"+self.config.port2,
+                base_url=str(self.config.host2)+":"+str(self.config.port2),
                 token=self.config.password2
             )
 
@@ -131,16 +131,22 @@ class MarcacionService:
         # Cache para API
         if self.config.driver == 'SQLSRV' and self.config.driver2 == 'API' and self.config.sistema == 5:
             try:
-                response = self.conndbgym.get(
+                response = self.conndbgym.getBody(
                     self.config.database2,
+                    None,
                     {
-                        "id_py": self.config.user2,
+                        "id_py": int(self.config.user2),
                         "id_membresia": 0,
                         "id_cliente": 0,
                         "nombre": "test"
                     }
                 )
 
+                if self.config.debug == 1:
+                    print(self.config.user2)
+                    print(type(response))
+                    print(response)
+                
                 detalle = response.get("detalleRespuesta", [])
                 self.cachegym = defaultdict(list)
 

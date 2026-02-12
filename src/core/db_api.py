@@ -32,6 +32,20 @@ class ConnAPI:
         self._validate_response(response)
         return response.json()
 
+    def getBody(self, endpoint, params=None, body=None):
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        
+        response = requests.request(
+            method='GET',
+            url=url,
+            params=params,
+            json=body,
+            headers=self.headers,
+            timeout=self.timeout
+        )
+        self._validate_response(response)
+        return response.json()
+
     def post(self, endpoint, data=None):
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         response = requests.post(
