@@ -153,9 +153,9 @@ class MarcacionService:
                 hoy = date.today()
 
                 for item in detalle:
-                    carnet = str(item.get("Codigo_C_B"))
+                    carnet = str(item.get("CI_B"))
 
-                    fecha_ini_raw = item.get("")
+                    fecha_ini_raw = item.get("FeRe")
                     fecha_ini = to_date(fecha_ini_raw)
                     fecha_fin = hoy
 
@@ -163,7 +163,7 @@ class MarcacionService:
 
                     row = {
                         'Carnet': carnet,
-                        'ClieNombre': '',      # no aplica
+                        'ClieNombre': item.get("Nombre_B"),
                         'Membresia': '',       # no aplica
                         'FechaIni': fecha_ini,
                         'FechaFin': fecha_fin,
@@ -220,7 +220,7 @@ class MarcacionService:
         
 
         # BioApp
-        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2):
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 5):
             if not relay:
                 resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
                 ' JOIN acc."User" as u ON a.UserCode=u.Code' \
@@ -437,103 +437,6 @@ class MarcacionService:
                     self.conndbbioapp.execute_query("UPDATE TEvent Set mostrado = 1 WHERE EventId = %s",(r[0],))
                 if relay:
                     self.conndbbioapp.execute_query("UPDATE TEvent Set abierto = 1 WHERE EventId = %s",(r[0],))   
-
-
-
-        # Access con API
-        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'API' and self.config.sistema == 5:
-            if not relay:
-                resultBioApp = self.conndbbioapp.execute_query(
-                    "SELECT TOP 1 a.id,a.pin,a.time,m.sn,1 as Allowed,a.device_name,m.ip,'' as meta "
-                    "FROM acc_monitor_log as a "
-                    "JOIN Machines as m ON a.device_id = m.id "
-                    "WHERE a.mostrado = 0 AND a.device_name = %s",
-                    (terminal,)
-                )
-
-            if relay:
-                resultBioApp = self.conndbbioapp.execute_query(
-                    "SELECT TOP 1 a.id,a.pin,a.time,m.sn,1 as Allowed,a.device_name,m.ip,'' as meta "
-                    "FROM acc_monitor_log as a "
-                    "JOIN Machines as m ON a.device_id = m.id "
-                    "WHERE a.abierto = 0 AND a.device_name = %s",
-                    (terminal,)
-                )
-
-            r = None
-            if resultBioApp and len(resultBioApp) > 0:
-                r = resultBioApp[0]
-                print("Nueva Marcacion:", r[1])
-
-            g = None
-            habilitado = 0
-
-            if r is not None:
-                resultGym = self.queryACache(r[1])
-
-                if len(resultGym) > 0:
-                    g = resultGym[0]
-                    for gym in resultGym:
-                        if gym['Habilitado'] in (1, '1', True):
-                            g = gym
-                            habilitado = 1
-
-            if r is not None and g is not None:
-                fecha_actual = datetime.today()
-                fecha_fin = g['FechaFin']
-
-                diferencia = fecha_fin - fecha_actual.date()
-                dias_diferencia = diferencia.days
-                if dias_diferencia < 0:
-                    dias_diferencia = 0
-
-                cercaDeVencer = dias_diferencia <= self.config.dias_alerta
-
-                marcacion = Marcacion(
-                    r[1],               # carnet
-                    r[2],               # time
-                    r[3],               # sn
-                    r[4],               # allowed
-                    r[5],               # device_name
-                    r[6],               # ip
-                    '',                 # ClieNombre (no aplica)
-                    habilitado,
-                    cercaDeVencer,
-                    'Sin Foto',
-                    '',                 # Paquete
-                    g['FechaIni'],
-                    g['FechaFin'],
-                    self.config.seconds_notification,
-                    dias_diferencia
-                )
-
-                if callable(funcion):
-                    funcion(marcacion)
-
-                if not relay:
-                    self.conndbbioapp.execute_query(
-                        "UPDATE acc_monitor_log SET mostrado = 1 WHERE Id = %s",
-                        (r[0],)
-                    )
-                else:
-                    self.conndbbioapp.execute_query(
-                        "UPDATE acc_monitor_log SET abierto = 1 WHERE Id = %s",
-                        (r[0],)
-                    )
-
-            if r is not None and g is None:
-                print('Error: Persona No encontrada en API')
-
-                if not relay:
-                    self.conndbbioapp.execute_query(
-                        "UPDATE acc_monitor_log SET mostrado = 1 WHERE Id = %s",
-                        (r[0],)
-                    )
-                else:
-                    self.conndbbioapp.execute_query(
-                        "UPDATE acc_monitor_log SET abierto = 1 WHERE Id = %s",
-                        (r[0],)
-                    )
 
 
         return marcacion

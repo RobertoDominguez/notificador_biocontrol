@@ -35,7 +35,7 @@ class TerminalService:
         if self.config.config == 0:
             return Exception('no configurado')
         
-        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2) :
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 5) :
             resultBioApp = self.conndbbioapp.execute_query('SELECT t.Guid, t.Code, t.Name, t.GroupId FROM bio.Terminal as t,acc."Group" as g where t.GroupId=g.Id AND g.Name=%s',(self.config.grupo,))
 
             for r in resultBioApp:
