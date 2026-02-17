@@ -54,24 +54,6 @@ class MarcacionService:
                 password=self.config.password
             )
 
-        if self.config.driver2 == 'SQLSRV':
-            self.conndbgym = ConnSQLSRV(
-                server=self.config.host2,
-                port=self.config.port2,
-                database=self.config.database2,
-                username=self.config.user2,
-                password=self.config.password2
-            )
-
-        if self.config.driver2 == 'MYSQL':
-            self.conndbgym = ConnMySQL(
-                server=self.config.host2,
-                port=self.config.port2,
-                database=self.config.database2,
-                username=self.config.user2,
-                password=self.config.password2
-            )
-
         if self.config.driver2 == 'API':
             self.conndbgym = ConnAPI(
                 base_url=str(self.config.host2)+":"+str(self.config.port2),
