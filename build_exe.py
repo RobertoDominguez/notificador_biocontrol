@@ -127,7 +127,7 @@ def build_exe(version):
 
 if __name__ == '__main__':
     print("🚀 Iniciando proceso de construcción...")
-    success = build_exe('api_v1.0.7')
+    success = build_exe('api_v1.1.7')
     
     if success:
         print("\n🎉 ¡Compilación completada exitosamente!")

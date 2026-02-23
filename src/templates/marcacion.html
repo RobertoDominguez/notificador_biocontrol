@@ -330,12 +330,14 @@
             const fechaIni = new Date(marcacion.fecha_ini);
             const fechaFin = new Date(marcacion.fecha_fin);
 
-            document.getElementById('fecha-ini-fin').textContent = 'venc: '+ formatearFecha( fechaFin );
+            // document.getElementById('fecha-ini-fin').textContent = 'venc: '+ formatearFecha( fechaFin );
+            document.getElementById('fecha-ini-fin').textContent = 'registro: '+ formatearFecha( fechaIni );
+
 
             // Formatear fecha y hora
             const fecha = new Date(marcacion.datetime);
             // document.getElementById('datetime').textContent = fecha.toLocaleString('es-ES');
-            document.getElementById('datetime').textContent = 'Saldo de ' + marcacion.saldo_dias + ' días';
+            // document.getElementById('datetime').textContent = 'Saldo de ' + marcacion.saldo_dias + ' días';
 
             // Actualizar información de la terminal
             document.getElementById('terminal-name').textContent = marcacion.terminalName;
@@ -346,11 +348,12 @@
             let estadoTexto = '';
             let estadoClass = '';
             
-            if ((marcacion.cercaDeVencer === true || marcacion.cercaDeVencer === 1) && (marcacion.habilitado === true || marcacion.habilitado === 1)) {
-                // Estado amarillo - Cerca de vencer
-                estadoTexto = '<span class="text-warning">⚠ Cerca de Vencer</span>';
-                estadoClass = 'status-warning';
-            } else if (marcacion.habilitado === 1 || marcacion.habilitado === true) {
+            // if ((marcacion.cercaDeVencer === true || marcacion.cercaDeVencer === 1) && (marcacion.habilitado === true || marcacion.habilitado === 1)) {
+            //     // Estado amarillo - Cerca de vencer
+            //     estadoTexto = '<span class="text-warning">⚠ Cerca de Vencer</span>';
+            //     estadoClass = 'status-warning';
+            // } else
+            if (marcacion.habilitado === 1 || marcacion.habilitado === true) {
                 // Estado verde - Marcación válida
                 estadoTexto = '<span class="text-success">✓ Acceso Permitido</span>';
                 estadoClass = 'status-allowed';
@@ -367,7 +370,8 @@
             if (marcacion.foto && marcacion.foto !== 'Sin Foto') {
                 fotoContainer.innerHTML = `<img src="/api/imagen/${marcacion.foto}" alt="Foto" style="width:100%;height:100%;object-fit:cover;">`;
             } else {
-                fotoContainer.innerHTML = 'Sin Foto';
+                // fotoContainer.innerHTML = 'Sin Foto';
+                fotoContainer.innerHTML = `<img src="{{ url_for('static', filename='images/user.png') }}" alt="Foto" style="width:100%;height:100%;object-fit:cover;">`;
             }
 
             // Cambiar borde según estado de acceso

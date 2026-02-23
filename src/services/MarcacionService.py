@@ -256,6 +256,9 @@ class MarcacionService:
                 if jsonMetaImage is not None:
                     foto = str(jsonMetaImage) + '.' + self.config.extension_images
 
+                #momentaneamente por la api
+                foto = 'Sin Foto'
+
                 if self.config.debug == 1:
                     print(g['FechaFin'])
 
