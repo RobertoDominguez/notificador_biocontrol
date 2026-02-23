@@ -172,7 +172,7 @@ class ConfigService:
                 file.write(f"PASSWORD={self.password}\n")
                 file.write("\n")
 
-                file.write("#CONFIGURACIONES DE LA DB SECUNDARIA (MYSQL) o (SQL SERVER)\n")
+                file.write("#CONFIGURACIONES DE LA DB SECUNDARIA (MYSQL) o (SQL SERVER) o (API)\n")
                 file.write(f"DRIVER2={self.driver2}\n")
                 file.write(f"HOST2={self.host2}\n")
                 file.write(f"PORT2={self.port2}\n")

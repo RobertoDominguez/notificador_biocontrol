@@ -19,7 +19,7 @@ class ConnAPI:
         }
 
         if token:
-            self.headers["x-api-key"] = f"{token}"
+            self.headers["x-access-apikey"] = f"{token}"
 
     def get(self, endpoint, params=None):
         url = f"{self.base_url}/{endpoint.lstrip('/')}"

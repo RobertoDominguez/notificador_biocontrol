@@ -62,10 +62,14 @@ def build_exe(version):
         '--hidden-import=pymysql',
         '--hidden-import=pyautogui',
         '--hidden-import=requests',
+        '--hidden-import=pyinput',
+        '--hidden-import=hidapi',
+
 
         '--hidden-import=core.db_mysql',
         '--hidden-import=core.db_sqlsrv',
         '--hidden-import=core.db_api',
+        '--hidden-import=core.hid_reader',
 
         '--hidden-import=models.Marcacion',
         '--hidden-import=models.Terminal',
@@ -127,7 +131,7 @@ def build_exe(version):
 
 if __name__ == '__main__':
     print("🚀 Iniciando proceso de construcción...")
-    success = build_exe('api_v1.0.7')
+    success = build_exe('qr_v1.0.8')
     
     if success:
         print("\n🎉 ¡Compilación completada exitosamente!")

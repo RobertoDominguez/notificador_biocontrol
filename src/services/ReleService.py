@@ -1,5 +1,6 @@
 from services.MarcacionService import marcacion_service
 from services.TerminalService import terminal_service
+from core.hid_reader import HID_Reader
 
 import threading
 import time
@@ -64,14 +65,15 @@ class ReleService:
         terminales = terminal_service.getTerminales()
         for t in terminales:
             #iniciar nuevo hilo para terminal
-            hilo_terminal = threading.Thread(target=self.worker, args=(t['name'],))
+            hilo_terminal = threading.Thread(target=self.worker, args=(t['name'],t['vid'],t['pid']))
             hilo_terminal.daemon = True  # Para que el hilo se cierre cuando el programa principal cierre
             hilo_terminal.start()
             self.hilos.append(hilo_terminal)
     
-    def worker(self,terminalName):
+    def worker(self,terminalName,vid,pid):
+        hid_reader = HID_Reader()
         while True:
-            marcacion = marcacion_service.verificarMarcacion(terminalName,relay=True, funcion = self.abrirRelay)
+            marcacion = marcacion_service.verificarMarcacion(hid_reader,relay=True, funcion = self.abrirRelay)
             time.sleep(1)  # Esperar 1 segundos
 
     def abrirRelay(self, marcacion):

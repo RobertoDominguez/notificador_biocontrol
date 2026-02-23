@@ -1,14 +1,12 @@
 class Terminal:
-    def __init__(self,guid,code,name,groupid):
-        self.guid = guid
-        self.code = code
+    def __init__(self,name,pid,vid):
         self.name = name
-        self.groupid = groupid
+        self.pid = pid
+        self.vid = vid
 
     def to_dict(self):
         return {
-            'guid': self.guid,
-            'code': self.code,
             'name': self.name,
-            'GroupId': self.groupid
+            'pid': self.pid,
+            'vid': self.vid,
         }

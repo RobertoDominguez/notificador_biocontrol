@@ -9,3 +9,5 @@ pymysql
 requests
 
 pyautogui
+hidapi
+pynput
