@@ -78,6 +78,12 @@ class MarcacionService:
                 token=self.config.password2
             )
 
+        if self.config.driver2 == 'API2':
+            self.conndbgym = ConnAPI(
+                base_url=str(self.config.host2),
+                token=self.config.password2
+            )
+
     def cachearGymDB(self):
         if (self.config.driver2 == 'MYSQL' or self.config.driver2 == 'SQLSRV') and self.config.sistema == 1 :
             resultGym = self.conndbgym.execute_query("SELECT Carnet,ClieNombre,Membresia,FechaIni,FechaFin,Paquete,SucNombre,Habilitado FROM acceso ", ( ))
@@ -180,6 +186,72 @@ class MarcacionService:
             except Exception as e:
                 print(f'Error cache API: {e}')
 
+        # Cache para API
+        if self.config.driver == 'SQLSRV' and self.config.driver2 == 'API2' and self.config.sistema == 6:
+            try:
+                response = self.conndbgym.get(
+                    self.config.database2,
+                    None
+                )
+
+                # if self.config.debug == 1:
+                #     print(self.config.user2)
+                #     print(type(response))
+                #     print(response)
+                
+                detalle = response.get("correctos", [])
+                detalle2 = response.get("incorrectos", [])
+                self.cachegym = defaultdict(list)
+
+                hoy = date.today()
+
+                for item in detalle:
+                    carnet = str(item.get("codigo"))
+
+                    fecha_ini = hoy
+                    fecha_fin = hoy
+
+                    habilitado = True
+                    row = {
+                        'Carnet': carnet,
+                        'ClieNombre': item.get("nombre"),
+                        'Membresia': '',       # no aplica
+                        'FechaIni': fecha_ini,
+                        'FechaFin': fecha_fin,
+                        'Paquete': '',         # no aplica
+                        'SucNombre': '',       # no aplica
+                        'Habilitado': habilitado,
+                    }
+
+                    self.cachegym[carnet].append(row)
+
+                for item in detalle2:
+                    carnet = str(item.get("codigo"))
+
+                    fecha_ini = hoy
+                    fecha_fin = hoy
+
+                    habilitado = False
+
+                    row = {
+                        'Carnet': carnet,
+                        'ClieNombre': item.get("nombre"),
+                        'Membresia': '',       # no aplica
+                        'FechaIni': fecha_ini,
+                        'FechaFin': fecha_fin,
+                        'Paquete': '',         # no aplica
+                        'SucNombre': '',       # no aplica
+                        'Habilitado': habilitado,
+                    }
+
+                    self.cachegym[carnet].append(row)
+
+                if self.config.debug == 1:
+                    print(f'Cache API: {len(self.cachegym)}')
+
+            except Exception as e:
+                print(f'Error cache API: {e}')
+
         if self.config.debug == 1:
             print('Cache DB2: '+str(len(self.cachegym)))
     
@@ -193,7 +265,7 @@ class MarcacionService:
         return self.cachegym.get(str(carnet), [])
 
     def vaciarColaDeEspera(self):
-        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 5):
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 5 or self.config.sistema == 6):
             print('Vaciando cola de espera...')
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set mostrado = 1 where mostrado = 0",())
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set abierto = 1 where abierto = 0",())
@@ -220,7 +292,7 @@ class MarcacionService:
         
 
         # BioApp
-        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 5):
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 5 or self.config.sistema == 6):
             if not relay:
                 resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
                 ' JOIN acc."User" as u ON a.UserCode=u.Code' \
