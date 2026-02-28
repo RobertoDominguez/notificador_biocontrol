@@ -47,9 +47,11 @@ class MarcacionService:
         codigo = hid_reader.read()
         try:
 
+            isEntry = self.config.user2 == 'Entry'
+
             if codigo != None and codigo.startswith(('https')):
                 print('lee codigo qr: '+str(codigo))
-                res = self.conndbgym.post('/ControlDevices/ValidateUserQR',{ "qrRaw": codigo })
+                res = self.conndbgym.post('/ControlDevices/ValidateUserQR',{ "qrRaw": codigo, "IsEntry": isEntry })
 
                 if self.config.debug == 1:
                     print(res)
