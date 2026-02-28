@@ -131,7 +131,7 @@ def build_exe(version):
 
 if __name__ == '__main__':
     print("🚀 Iniciando proceso de construcción...")
-    success = build_exe('qr_v1.0.8')
+    success = build_exe('qr_v1.0.9')
     
     if success:
         print("\n🎉 ¡Compilación completada exitosamente!")

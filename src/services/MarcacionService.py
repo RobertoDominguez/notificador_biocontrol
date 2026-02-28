@@ -49,8 +49,12 @@ class MarcacionService:
 
             isEntry = self.config.user2 == 'Entry'
 
+
+
             if codigo != None and codigo.startswith(('https')):
                 print('lee codigo qr: '+str(codigo))
+                if self.config.debug == 1:
+                    print('Entrada: '+str(isEntry))
                 res = self.conndbgym.post('/ControlDevices/ValidateUserQR',{ "qrRaw": codigo, "IsEntry": isEntry })
 
                 if self.config.debug == 1:

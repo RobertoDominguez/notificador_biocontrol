@@ -182,7 +182,7 @@ class ConfigService:
                 file.write("\n")
 
                 file.write("#QUE SISTEMA UTILIZA PARA LA DB2\n")
-                file.write("# 1: Access + API QR\n")
+                file.write("# 5: BioApp + API QR\n")
                 
                 file.write(f"SISTEMA={self.sistema}\n")
                 file.write("\n")
