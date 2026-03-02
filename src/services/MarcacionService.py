@@ -206,7 +206,7 @@ class MarcacionService:
                 hoy = date.today()
 
                 for item in detalle:
-                    carnet = str(item.get("codigo"))
+                    carnet = str(item.get("id_persona"))
 
                     fecha_ini = hoy
                     fecha_fin = hoy
@@ -226,7 +226,7 @@ class MarcacionService:
                     self.cachegym[carnet].append(row)
 
                 for item in detalle2:
-                    carnet = str(item.get("codigo"))
+                    carnet = str(item.get("id_persona"))
 
                     fecha_ini = hoy
                     fecha_fin = hoy
@@ -329,7 +329,7 @@ class MarcacionService:
                     foto = str(jsonMetaImage) + '.' + self.config.extension_images
 
                 #momentaneamente por la api
-                foto = 'Sin Foto'
+                # foto = 'Sin Foto'
 
                 if self.config.debug == 1:
                     print(g['FechaFin'])
