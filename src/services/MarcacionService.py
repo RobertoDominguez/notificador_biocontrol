@@ -74,7 +74,7 @@ class MarcacionService:
 
         if self.config.driver2 == 'API':
             self.conndbgym = ConnAPI(
-                base_url=str(self.config.host2)+":"+str(self.config.port2),
+                base_url=str(self.config.host2),
                 token=self.config.password2
             )
 
@@ -329,7 +329,7 @@ class MarcacionService:
                     foto = str(jsonMetaImage) + '.' + self.config.extension_images
 
                 #momentaneamente por la api
-                # foto = 'Sin Foto'
+                foto = 'Sin Foto'
 
                 if self.config.debug == 1:
                     print(g['FechaFin'])

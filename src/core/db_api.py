@@ -2,6 +2,10 @@ import requests
 import json
 import time
 
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 class ConnAPI:
     def __init__(
         self,
@@ -27,7 +31,8 @@ class ConnAPI:
             url,
             params=params,
             headers=self.headers,
-            timeout=self.timeout
+            timeout=self.timeout,
+            verify=False
         )
         self._validate_response(response)
         return response.json()
@@ -41,7 +46,8 @@ class ConnAPI:
             params=params,
             json=body,
             headers=self.headers,
-            timeout=self.timeout
+            timeout=self.timeout,
+            verify=False
         )
         self._validate_response(response)
         return response.json()
@@ -52,7 +58,8 @@ class ConnAPI:
             url,
             json=data,
             headers=self.headers,
-            timeout=self.timeout
+            timeout=self.timeout,
+            verify=False
         )
         self._validate_response(response)
         return response.json()
