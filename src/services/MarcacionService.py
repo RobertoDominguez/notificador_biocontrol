@@ -118,8 +118,9 @@ class MarcacionService:
                 print('Error en cache: 0 Tuplas recibidas')
 
             for gym in resultGym:
+                carnet = str(gym[0]).strip()
                 row = {
-                    'Carnet' : gym[0],
+                    'Carnet' : carnet,
                     'ClieNombre' : gym[1],
                     'Membresia' : gym[2],
                     'FechaIni' : gym[3],
@@ -128,7 +129,7 @@ class MarcacionService:
                     'SucNombre' : gym[6],
                     'Habilitado' : gym[7],
                 }
-                self.cachegym[gym[0]].append(row)
+                self.cachegym[carnet].append(row)
         
         if self.config.driver == 'SQLSRV' and self.firstEntry:
             self.firstEntry = False
@@ -159,7 +160,7 @@ class MarcacionService:
                 hoy = date.today()
 
                 for item in detalle:
-                    carnet = str(item.get("CI_B"))
+                    carnet = str(item.get("CI_B")).strip()
 
                     fecha_ini_raw = item.get("FeRe")
                     fecha_ini = to_date(fecha_ini_raw)
@@ -206,7 +207,7 @@ class MarcacionService:
                 hoy = date.today()
 
                 for item in detalle:
-                    carnet = str(item.get("id_persona"))
+                    carnet = str(item.get("id_persona")).strip()
 
                     fecha_ini = hoy
                     fecha_fin = hoy
@@ -226,7 +227,7 @@ class MarcacionService:
                     self.cachegym[carnet].append(row)
 
                 for item in detalle2:
-                    carnet = str(item.get("id_persona"))
+                    carnet = str(item.get("id_persona")).strip()
 
                     fecha_ini = hoy
                     fecha_fin = hoy
@@ -262,7 +263,7 @@ class MarcacionService:
 
 
     def queryACache(self,carnet):
-        return self.cachegym.get(str(carnet), [])
+        return self.cachegym.get(str(carnet).strip(), [])
 
     def vaciarColaDeEspera(self):
         if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 5 or self.config.sistema == 6):
