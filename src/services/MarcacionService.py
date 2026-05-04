@@ -327,11 +327,11 @@ class MarcacionService:
                 foto = 'Sin Foto'
                 jsonMetaImage = json.loads(r[7]).get("photoFileName")
                 if jsonMetaImage is not None:
-                    foto = str(jsonMetaImage) + '.' + self.config.extension_images
+                    foto = str(jsonMetaImage)
 
                 #momentaneamente por la api
-                if self.config.path_images == '':
-                    foto = 'Sin Foto'
+                # if self.config.path_images == '':
+                #     foto = 'Sin Foto'
 
                 if self.config.debug == 1:
                     print(g['FechaFin'])
@@ -405,7 +405,7 @@ class MarcacionService:
                 foto = 'Sin Foto'
                 jsonMetaImage = None #json.loads(r[7]).get("photoFileName")
                 if jsonMetaImage is not None:
-                    foto = str(jsonMetaImage) + '.' + self.config.extension_images
+                    foto = str(jsonMetaImage)
 
                 fecha_fin = g['FechaFin']
                 fecha_actual = datetime.today()
@@ -491,7 +491,7 @@ class MarcacionService:
                 foto = 'Sin Foto'
                 jsonMetaImage = r[1] #json.loads(r[7]).get("photoFileName")
                 if jsonMetaImage is not None:
-                    foto = str(jsonMetaImage) + '.' + self.config.extension_images
+                    foto = str(jsonMetaImage)
 
                 fecha_fin = r[12]
                 fecha_actual = datetime.today()

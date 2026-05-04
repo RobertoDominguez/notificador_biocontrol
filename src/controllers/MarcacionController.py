@@ -50,7 +50,7 @@ class MarcacionController:
                 )
 
             # Si es local
-            return send_from_directory(base_path, filename)
+            return send_from_directory(base_path, filename + '.' + self.config.extension_images)
 
         except Exception as e:
             return f"Error: {str(e)}", 500
