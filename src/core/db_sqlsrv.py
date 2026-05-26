@@ -7,6 +7,7 @@ class ConnSQLSRV:
         self.database = database
         self.username = username
         self.password = password
+        self.tds_version = "7.0"
 
     # NUEVA VERSION ABRE UNA CONEXION POR CADA CONSULTA
     def execute_query(self, query, params=None):
@@ -16,7 +17,8 @@ class ConnSQLSRV:
                 port=self.port,
                 database=self.database,
                 user=self.username,
-                password=self.password
+                password=self.password,
+                tds_version=self.tds_version
             )
             cursor = conn.cursor()
             cursor.execute(query, params or ())

@@ -41,7 +41,8 @@ class MarcacionService:
                 port=self.config.port,
                 database=self.config.database,
                 username=self.config.user,
-                password=self.config.password
+                password=self.config.password,
+                
             )
 
         if self.config.driver == 'MYSQL':
@@ -117,6 +118,31 @@ class MarcacionService:
                 }
                 self.cachegym[gym[0]].append(row)
         
+        if (self.config.driver2 == 'MYSQL' or self.config.driver2 == 'SQLSRV') and self.config.sistema == 7 :
+            # Campos:
+            # codigo
+            # paquete
+            # fecha_vencimiento
+            # permitido
+            resultGym = self.conndbgym.execute_query("SELECT codigo,'Cliente','Inscrito',NULL,fecha_vencimiento,paquete,'GymSystem',permitido FROM biometric_access_view ", ( ))
+            if len(resultGym) > 0:
+                self.cachegym = defaultdict(list)
+            else:
+                print('Error en cache: 0 Tuplas recibidas')
+
+            for gym in resultGym:
+                row = {
+                    'Carnet' : gym[0],
+                    'ClieNombre' : gym[1],
+                    'Membresia' : gym[2],
+                    'FechaIni' : gym[4],
+                    'FechaFin' : gym[4],
+                    'Paquete' : gym[5],
+                    'SucNombre' : gym[6],
+                    'Habilitado' : gym[7],
+                }
+                self.cachegym[gym[0]].append(row)
+
         if self.config.driver == 'SQLSRV' and self.firstEntry:
             self.firstEntry = False
             self.vaciarColaDeEspera()
@@ -134,7 +160,7 @@ class MarcacionService:
         return self.cachegym.get(str(carnet), [])
 
     def vaciarColaDeEspera(self):
-        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2):
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema==7):
             print('Vaciando cola de espera...')
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set mostrado = 1 where mostrado = 0",())
             resultBioApp = self.conndbbioapp.execute_query("UPDATE acc.AccessLog set abierto = 1 where abierto = 0",())
@@ -161,7 +187,7 @@ class MarcacionService:
         
 
         # BioApp
-        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2):
+        if self.config.driver == 'SQLSRV' and (self.config.sistema == 1 or self.config.sistema == 2 or self.config.sistema == 7):
             if not relay:
                 resultBioApp = self.conndbbioapp.execute_query("SELECT top 1 a.Id,a.UserCode,a.DateTime,a.TerminalCode,a.Allowed,a.TerminalName,a.TerminalIP,u.Meta FROM acc.AccessLog as a" \
                 ' JOIN acc."User" as u ON a.UserCode=u.Code' \

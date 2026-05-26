@@ -188,6 +188,7 @@ class ConfigService:
                 file.write("# 4: Mini SQL (Access Control System)\n")
                 file.write("# 5: BioApp + (API)\n")
                 file.write("# 6: BioApp + (API2)\n")
+                file.write("# 7: BioApp + GymSystem\n")
                 file.write(f"SISTEMA={self.sistema}\n")
                 file.write("\n")
 
